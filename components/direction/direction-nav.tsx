@@ -12,6 +12,7 @@ import {
   Users,
   UtensilsCrossed,
   Timer,
+  Percent,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ const SIDEBAR: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/direction/stock", label: "Stock", icon: Package },
   { href: "/direction/ventes", label: "Ventes", icon: BarChart3 },
   { href: "/direction/activite", label: "Activité", icon: Timer },
+  { href: "/direction/couts", label: "Coûts", icon: Percent },
   { href: "/direction/menu", label: "Menu", icon: UtensilsCrossed },
   { href: "/direction/equipe", label: "Équipe", icon: Users },
   { href: "/direction/etablissements", label: "Sites", icon: Store },

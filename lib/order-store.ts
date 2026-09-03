@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, lte, sql } from "drizzle-orm";
 import { canUse } from "@/lib/billing/plans";
 import { capture } from "@/lib/capture";
 import { captureKey } from "@/lib/capture-keys";
@@ -117,6 +117,28 @@ export async function getPaidOrdersForTenant(tenantId: string, fromDay: string, 
       and(
         eq(orders.tenantId, tenantId),
         eq(orders.status, "paid"),
+        gte(orders.serviceDate, fromDay),
+        lte(orders.serviceDate, toDay)
+      )
+    )
+    .orderBy(asc(orders.serviceDate));
+  return attachItems(rows);
+}
+
+// Tickets already sent to the kitchen (stock consumed), including later
+// cancellations. Line items included — used for theoretical consumption.
+export async function getSentOrdersWithItemsForTenant(
+  tenantId: string,
+  fromDay: string,
+  toDay: string
+): Promise<Order[]> {
+  const rows = await db
+    .select()
+    .from(orders)
+    .where(
+      and(
+        eq(orders.tenantId, tenantId),
+        isNotNull(orders.sentAt),
         gte(orders.serviceDate, fromDay),
         lte(orders.serviceDate, toDay)
       )

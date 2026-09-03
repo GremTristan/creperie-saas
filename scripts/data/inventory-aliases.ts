@@ -1,0 +1,125 @@
+// Printed-menu wording → names as they appear on the Molard supplier sheet.
+
+export const INVENTORY_ALIASES: Record<string, string[]> = {
+  "Gruyère AOP": ["Gruyère AOP râpé"],
+  Jambon: ["Jambon Prestige", "Jambon cuit Puccini"],
+  "Jambon genevois": ["Jambon Prestige", "Jambon Cru du Château"],
+  Œuf: ["Œufs 63/73 import plein air", "Œufs 63/73 import"],
+  Chorizo: ["Chorizo entier", "Chorizo piquant"],
+  Champignons: ["Champignons de paris brun"],
+  Épinards: ["Épinard en branches", "Epinard en branche (surgelé)"],
+  "Épinards nature": ["Épinard en branches", "Epinard en branche (surgelé)"],
+  "Fromage de chèvre": ["Chèvre Bûche Saint Maure", "Bûchette Cendrée Coque lait"],
+  Mozzarella: ["Mozzarella Cossette 45%", "Mozzraella net rapé"],
+  "Mozzarella de bufflonne": ["Mozzarella Cossette 45%"],
+  Parmesan: ["Parmesan pointe AOP", "Pétale Parmiggiano Regg 500gr"],
+  "Saumon fumé": ["Saumon fumé (surgelé)", "Saumon fumé royal"],
+  Lardons: ["Lardons fumés cru"],
+  Câpres: ["Câpres capucines"],
+  "Crème acidulée": ["Crème acidulée 15%"],
+  Crème: ["LRG crème", "Crème (35%MG)"],
+  "Oignons crus": ["oignons demi emincés", "Oignons blancs", "Oignons rouges"],
+  "Oignons confits": ["Oignons Confit"],
+  "Confit d'oignons": ["Oignons Confit"],
+  Noix: ["Cerneaux de noix cassés"],
+  Miel: ["Miel de fleur"],
+  Nutella: ["Nutella pot de 750g"],
+  Beurre: ["Beurre Salé", "Beurre Motte", "Beurre Doux"],
+  Sucre: ["Sucre fin cristallisé", "Sucre sachet"],
+  Poire: ["Poire"],
+  "Pomme fruit": ["Pommes gala cube"],
+  "Pommes caramélisées": ["Pommes gala cube"],
+  "Compote de pommes": ["Pommes gala cube"],
+  "Amandes grillées": ["Amandes effilées"],
+  "Caramel au beurre salé": ["Caramel beurre salé"],
+  "Caramel au beurre salé artisanal": ["Caramel beurre salé"],
+  "Noix de coco râpée": ["Noix de coco râpée"],
+  "Chocolat artisanal": ["Chocolat"],
+  "Chocolat chaud": ["Caotina original"],
+  "Chocolat chaud artisanal": ["Caotina original"],
+  "Chocolat chaud ou froid": ["Caotina original"],
+  "Chocolat chaud ou froid artisanal": ["Caotina original"],
+  "Chocolat viennois": ["Caotina original"],
+  Confitures: ["Confiture de Myrtilles", "Confiture Fraise", "Confiture Framboise"],
+  "Zestes d'oranges": ["Oranges a jus"],
+  Frappé: ["IMP Glace Vanille", "IMP Glace Chocolat"],
+  "Filet de poulet": ["Poulet Hallal", "Filet de Poulet Halal", "Filet de Poulet Français"],
+  "Émincé de poulet": ["Poulet Hallal"],
+  "Poulet mariné": ["Poulet Hallal"],
+  "Tomates cerise confites": ["Tomates cerises cherry"],
+  "Tomates cerises confites": ["Tomates cerises cherry"],
+  Tomates: ["Tomates Samsmazano", "Tomates cerises cherry"],
+  Concombre: ["Concombres"],
+  "Sauce tomate au basilic": ["Sauce Tomate", "Pesto"],
+  "Fromage à raclette": ["Raclette le corboîer carré"],
+  "Tomme genevoise": ["Tomme GRTA 100gr"],
+  "Tomme vaudoise": ["Tomme Vaudoise", "Tomme GRTA 100gr"],
+  Saucisse: ["Saucisson de Jussy IGP kg", "Saucisse à rôtir fermier Vaudois"],
+  "Saucisson vaudois": ["Saucisson Vaudois IGP kg", "Saucisson de Jussy IGP kg"],
+  "Jambon de Parme": ["Jambon de Parme"],
+  "Jambon cru": ["Jambon Cru du Château", "Jambon de Parme"],
+  Bresaola: ["Bresaola"],
+  "Magret de canard": ["Magret de canard fumé"],
+  "Magret de canard fumé": ["Magret de canard fumé"],
+  "Bœuf haché": ["Viande Hachée", "Viande de bœuf haché (surgelé)"],
+  Salade: ["Salade feuilles de chènes", "Roquette"],
+  Roquette: ["Roquette"],
+  Olives: ["Olives Noires dénoyautées"],
+  "Glace Chocolat": ["IMP Glace Chocolat"],
+  "Glace Vanille": ["IMP Glace Vanille"],
+  "Glace Mocca": ["IMP Glace Mocca"],
+  "Glace Stracciatella": ["IMP Glace Stacciatella"],
+  "Cidre Sorre Brut": ["Cidre Sorre Brut"],
+  "Cidre Sorre Doux": ["Cidre Sorre Doux"],
+  "Cidre Rhuys": ["Cidre Rhuys"],
+  "Vin blanc Chasselas": ["Vin blanc Chasselas", "Château du Crêt (Chasselas)"],
+  Café: ["Grain Napolitano", "Grain Top Arabica"],
+  "Double espresso": ["Grain Napolitano"],
+  Cappuccino: ["Grain Napolitano"],
+  "Café Viennois": ["Grain Napolitano"],
+  "Café viennois": ["Grain Napolitano"],
+  Renversé: ["Grain Napolitano", "Lait entier"],
+  "Lait chaud ou froid": ["Lait entier"],
+  "Petite salade verte": ["Salade feuilles de chènes"],
+  "Petite salade mixte": ["Salade feuilles de chènes"],
+  "Compote de pommes maison et amandes": ["Pommes gala cube", "Amandes effilées"],
+  "Coca-Cola": ["Coca-cola caisse"],
+  "Valser 5dl": ["Valser Still Naturelle 50", "Valser Gazeuse 50", "Valser plate"],
+  Valser: ["Valser Still Naturelle 50", "Valser plate"],
+  Prosecco: ["Proseco"],
+  "Prosecco flûte": ["Proseco"],
+  "Flûte de Prosecco": ["Proseco"],
+  "Aperol Spritz": ["Aperol", "Apérol apéritif 11 %"],
+  "Bière pression blonde 3dl": ["Bière blonde Feld"],
+  "Duchesse Anne": ["Duchesse Anne"],
+  "Jus de pommes artisanal médaillé": ["Jus de pomme"],
+  "Jus de pomme artisanal médaillé": ["Jus de pomme"],
+  "Jus d'oranges": ["Granini Orange", "Oranges a jus"],
+  "Jus d'oranges fraîchement pressées": ["Oranges a jus", "Granini Orange"],
+  "Pirulo tropical": ["Pirulo Tropical"],
+  "Sirop d'érable": ["Sirop d’Erable"],
+  "Crème de marrons": ["Crème de marron"],
+  "Kinder Surprise": ["Kinder surprise"],
+  "Thés Eilles": ["Earl grey", "Ceylan"],
+};
+
+export function findInventoryMatch<T extends { id: string; name: string }>(
+  target: string,
+  candidates: T[]
+): T | null {
+  const wanted = target.toLowerCase().trim();
+  const exact = candidates.find((c) => c.name.toLowerCase().trim() === wanted);
+  if (exact) return exact;
+  for (const alias of INVENTORY_ALIASES[target] ?? []) {
+    const hit = candidates.find((c) => c.name.toLowerCase().trim() === alias.toLowerCase());
+    if (hit) return hit;
+  }
+  const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const substring = candidates.find((c) => {
+    const name = c.name.toLowerCase().trim();
+    const [shorter, longer] = name.length <= wanted.length ? [name, wanted] : [wanted, name];
+    if (shorter.length < 5) return false;
+    return new RegExp(`\\b${escape(shorter)}\\b`, "i").test(longer);
+  });
+  return substring ?? null;
+}

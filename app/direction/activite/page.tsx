@@ -148,6 +148,10 @@ export default async function ActivitePage({
             <Link href="/direction/ventes" className="underline-offset-2 hover:underline">
               Voir le chiffre d’affaires
             </Link>
+            {" · "}
+            <Link href="/direction/couts" className="underline-offset-2 hover:underline">
+              Voir les coûts
+            </Link>
           </p>
         </>
       )}
