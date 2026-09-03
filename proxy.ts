@@ -13,6 +13,7 @@ const PUBLIC_PREFIXES = [
   "/hors-ligne",
   "/acces-refuse",
   "/api/stripe/webhook",
+  "/api/pos/zelty",
   "/api/health",
   "/manifest.webmanifest",
   "/sw.js",
