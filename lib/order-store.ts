@@ -125,6 +125,17 @@ export async function getPaidOrdersForTenant(tenantId: string, fromDay: string, 
   return attachItems(rows);
 }
 
+// All tickets on the service dates (including cancelled). Headers only — L0
+// direction views never need line items.
+export async function getOrderHeadersForTenant(tenantId: string, fromDay: string, toDay: string): Promise<Order[]> {
+  const rows = await db
+    .select()
+    .from(orders)
+    .where(and(eq(orders.tenantId, tenantId), gte(orders.serviceDate, fromDay), lte(orders.serviceDate, toDay)))
+    .orderBy(asc(orders.serviceDate), asc(orders.number));
+  return rows.map((row) => toOrder(row, []));
+}
+
 export interface NewOrderLine {
   menuItemId: string;
   quantity: number;

@@ -11,6 +11,7 @@ import {
   Store,
   Users,
   UtensilsCrossed,
+  Timer,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ const SIDEBAR: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/direction", label: "Accueil", icon: Home },
   { href: "/direction/stock", label: "Stock", icon: Package },
   { href: "/direction/ventes", label: "Ventes", icon: BarChart3 },
+  { href: "/direction/activite", label: "Activité", icon: Timer },
   { href: "/direction/menu", label: "Menu", icon: UtensilsCrossed },
   { href: "/direction/equipe", label: "Équipe", icon: Users },
   { href: "/direction/etablissements", label: "Sites", icon: Store },

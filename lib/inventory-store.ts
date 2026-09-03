@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { capture } from "@/lib/capture";
 import { captureKey } from "@/lib/capture-keys";
 import { db } from "@/lib/db/client";
@@ -233,6 +233,29 @@ export async function consumeStock(
       idempotencyKey: captureKey(input.tenantId, "stock.sale", line.inventoryItemId, movement.createdAt.toISOString()),
     });
   }
+}
+
+export async function getWasteMovementsForTenant(
+  tenantId: string,
+  from: Date,
+  to: Date
+): Promise<{ siteId: string; delta: number; createdAt: Date }[]> {
+  const rows = await db
+    .select({
+      siteId: stockMovements.siteId,
+      delta: stockMovements.delta,
+      createdAt: stockMovements.createdAt,
+    })
+    .from(stockMovements)
+    .where(
+      and(
+        eq(stockMovements.tenantId, tenantId),
+        eq(stockMovements.reason, "waste"),
+        gte(stockMovements.createdAt, from),
+        lt(stockMovements.createdAt, to)
+      )
+    );
+  return rows.map((row) => ({ siteId: row.siteId, delta: Number(row.delta), createdAt: row.createdAt }));
 }
 
 export async function deleteInventoryItem(tenantId: string, itemId: string): Promise<void> {

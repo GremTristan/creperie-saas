@@ -56,22 +56,30 @@ export default async function VentesPage({ searchParams }: { searchParams: Promi
         title="Ventes"
         description="Chiffre d’affaires encaissé, produits les plus vendus, comparaison entre établissements."
         action={
-          exportsEnabled ? (
+          <div className="flex flex-wrap gap-2">
             <Link
-              href={`/api/export/ventes${query({})}`}
-              className="inline-flex min-h-11 items-center gap-2 rounded-md bg-muted px-4 text-sm font-semibold text-foreground hover:bg-border/60"
+              href={`/direction/activite${query({})}`}
+              className="inline-flex min-h-11 items-center rounded-md px-4 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
             >
-              <Download className="h-4 w-4" /> Export tableur (CSV)
+              Activité
             </Link>
-          ) : (
-            <Link
-              href="/direction/abonnement"
-              className="inline-flex min-h-11 items-center gap-2 rounded-md bg-muted px-4 text-sm font-semibold text-muted-foreground hover:bg-border/60"
-              title="Inclus dans la formule Pro"
-            >
-              <Download className="h-4 w-4" /> Export Pro
-            </Link>
-          )
+            {exportsEnabled ? (
+              <Link
+                href={`/api/export/ventes${query({})}`}
+                className="inline-flex min-h-11 items-center gap-2 rounded-md bg-muted px-4 text-sm font-semibold text-foreground hover:bg-border/60"
+              >
+                <Download className="h-4 w-4" /> Export tableur (CSV)
+              </Link>
+            ) : (
+              <Link
+                href="/direction/abonnement"
+                className="inline-flex min-h-11 items-center gap-2 rounded-md bg-muted px-4 text-sm font-semibold text-muted-foreground hover:bg-border/60"
+                title="Inclus dans la formule Pro"
+              >
+                <Download className="h-4 w-4" /> Export Pro
+              </Link>
+            )}
+          </div>
         }
       />
 

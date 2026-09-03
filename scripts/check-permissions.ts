@@ -108,6 +108,7 @@ async function main() {
     { path: "/direction", expect: { anonymous: "login", waiter: "forbidden", cook: "forbidden", director: "ok", superadmin: "forbidden", forged: "login", expired: "login" } },
     { path: "/direction/equipe", expect: { waiter: "forbidden", cook: "forbidden", director: "ok" } },
     { path: "/direction/ventes", expect: { waiter: "forbidden", cook: "forbidden", director: "ok" } },
+    { path: "/direction/activite", expect: { waiter: "forbidden", cook: "forbidden", director: "ok" } },
     { path: "/direction/abonnement", expect: { waiter: "forbidden", director: "ok" } },
     { path: "/admin", expect: { anonymous: "login", waiter: "forbidden", cook: "forbidden", director: "forbidden", superadmin: "ok" } },
     { path: `/s/${S}/service`, expect: { anonymous: "login", waiter: "ok", cook: "forbidden", director: "ok", superadmin: "forbidden" } },
@@ -119,6 +120,7 @@ async function main() {
     { path: `/api/kds/${S}`, expect: { anonymous: "login", waiter: "forbidden", cook: "ok", director: "ok" } },
     { path: `/api/stock/${S}`, expect: { waiter: "forbidden", cook: "ok", director: "ok" } },
     { path: "/api/export/ventes?periode=jour", expect: { anonymous: "login", waiter: "forbidden", cook: "forbidden", director: "ok" } },
+    { path: "/api/export/tickets?periode=jour", expect: { waiter: "forbidden", cook: "forbidden", director: "ok" } },
     { path: "/api/export/donnees", expect: { waiter: "forbidden", director: "ok" } },
     // Cross-tenant: proxy lets directors through on role, server must refuse on tenant.
     { path: `/s/${foreignSite.id}/service`, expect: { director: ["forbidden", "not-found"], waiter: "own-site" } },
