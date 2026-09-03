@@ -110,6 +110,7 @@ async function main() {
     { path: "/direction/ventes", expect: { waiter: "forbidden", cook: "forbidden", director: "ok" } },
     { path: "/direction/activite", expect: { waiter: "forbidden", cook: "forbidden", director: "ok" } },
     { path: "/direction/couts", expect: { waiter: "forbidden", cook: "forbidden", director: "ok" } },
+    { path: "/direction/livraisons", expect: { waiter: "forbidden", cook: "forbidden", director: "ok" } },
     { path: "/direction/abonnement", expect: { waiter: "forbidden", director: "ok" } },
     { path: "/admin", expect: { anonymous: "login", waiter: "forbidden", cook: "forbidden", director: "forbidden", superadmin: "ok" } },
     { path: `/s/${S}/service`, expect: { anonymous: "login", waiter: "ok", cook: "forbidden", director: "ok", superadmin: "forbidden" } },
