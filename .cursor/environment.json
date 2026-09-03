@@ -1,0 +1,11 @@
+{
+  "name": "Crêpo — creperie SaaS",
+  "install": "npm ci",
+  "start": "bash scripts/cloud-agent-setup.sh",
+  "terminals": [
+    {
+      "name": "dev server",
+      "command": "npm run dev"
+    }
+  ]
+}
