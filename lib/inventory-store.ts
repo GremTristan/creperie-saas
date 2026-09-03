@@ -279,6 +279,32 @@ export async function consumeStock(
   }
 }
 
+export async function getStockMovementsForTenant(
+  tenantId: string,
+  from: Date,
+  to: Date
+): Promise<{ inventoryItemId: string; siteId: string; delta: number; reason: string; createdAt: Date }[]> {
+  const rows = await db
+    .select({
+      inventoryItemId: stockMovements.inventoryItemId,
+      siteId: stockMovements.siteId,
+      delta: stockMovements.delta,
+      reason: stockMovements.reason,
+      createdAt: stockMovements.createdAt,
+    })
+    .from(stockMovements)
+    .where(
+      and(eq(stockMovements.tenantId, tenantId), gte(stockMovements.createdAt, from), lt(stockMovements.createdAt, to))
+    );
+  return rows.map((row) => ({
+    inventoryItemId: row.inventoryItemId,
+    siteId: row.siteId,
+    delta: Number(row.delta),
+    reason: row.reason,
+    createdAt: row.createdAt,
+  }));
+}
+
 export async function getWasteMovementsForTenant(
   tenantId: string,
   from: Date,

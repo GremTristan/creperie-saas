@@ -14,7 +14,9 @@ import { drizzle } from "drizzle-orm/neon-http";
 import { and, eq, inArray } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { inventoryItems, menuItemIngredients, menuItems, sites, suppliers, tenants, users } from "../lib/db/schema";
-import type { Category, MenuCategory, Zone } from "../types";
+import { findInventoryMatch } from "./data/inventory-aliases";
+import { MOLARD_HERO_BY_NAME, MOLARD_HERO_RECIPES, specForInventoryName, stockQtyFromPortion } from "../lib/molard-heroes";
+import type { MenuCategory, Category, Zone } from "../types";
 import { menus, type MenuItemKind, type SourceMenuItem } from "./data/menus";
 
 config({ path: ".env.local", quiet: true });
@@ -64,110 +66,6 @@ const NO_AUTO_INGREDIENT = new Set([
   "Thé froid pêche ou citron",
   "Nectars ananas ou abricot",
 ]);
-
-// Printed-menu wording → names as they appear on the Molard supplier sheet.
-const ALIASES: Record<string, string[]> = {
-  "Gruyère AOP": ["Gruyère AOP râpé"],
-  Jambon: ["Jambon Prestige", "Jambon cuit Puccini"],
-  "Jambon genevois": ["Jambon Prestige", "Jambon Cru du Château"],
-  Œuf: ["Œufs 63/73 import plein air", "Œufs 63/73 import"],
-  Chorizo: ["Chorizo entier", "Chorizo piquant"],
-  Champignons: ["Champignons de paris brun"],
-  Épinards: ["Épinard en branches", "Epinard en branche (surgelé)"],
-  "Épinards nature": ["Épinard en branches", "Epinard en branche (surgelé)"],
-  "Fromage de chèvre": ["Chèvre Bûche Saint Maure", "Bûchette Cendrée Coque lait"],
-  Mozzarella: ["Mozzarella Cossette 45%", "Mozzraella net rapé"],
-  "Mozzarella de bufflonne": ["Mozzarella Cossette 45%"],
-  Parmesan: ["Parmesan pointe AOP", "Pétale Parmiggiano Regg 500gr"],
-  "Saumon fumé": ["Saumon fumé (surgelé)", "Saumon fumé royal"],
-  Lardons: ["Lardons fumés cru"],
-  Câpres: ["Câpres capucines"],
-  "Crème acidulée": ["Crème acidulée 15%"],
-  Crème: ["LRG crème", "Crème (35%MG)"],
-  "Oignons crus": ["oignons demi emincés", "Oignons blancs", "Oignons rouges"],
-  "Oignons confits": ["Oignons Confit"],
-  "Confit d'oignons": ["Oignons Confit"],
-  Noix: ["Cerneaux de noix cassés"],
-  Miel: ["Miel de fleur"],
-  Nutella: ["Nutella pot de 750g"],
-  Beurre: ["Beurre Salé", "Beurre Motte", "Beurre Doux"],
-  Sucre: ["Sucre fin cristallisé", "Sucre sachet"],
-  Poire: ["Poire"],
-  "Pomme fruit": ["Pommes gala cube"],
-  "Pommes caramélisées": ["Pommes gala cube"],
-  "Compote de pommes": ["Pommes gala cube"],
-  "Amandes grillées": ["Amandes effilées"],
-  "Caramel au beurre salé": ["Caramel beurre salé"],
-  "Caramel au beurre salé artisanal": ["Caramel beurre salé"],
-  "Noix de coco râpée": ["Noix de coco râpée"],
-  "Chocolat artisanal": ["Chocolat"],
-  "Chocolat chaud": ["Caotina original"],
-  "Chocolat chaud artisanal": ["Caotina original"],
-  "Chocolat chaud ou froid": ["Caotina original"],
-  "Chocolat chaud ou froid artisanal": ["Caotina original"],
-  "Chocolat viennois": ["Caotina original"],
-  Confitures: ["Confiture de Myrtilles", "Confiture Fraise", "Confiture Framboise"],
-  "Zestes d'oranges": ["Oranges a jus"],
-  Frappé: ["IMP Glace Vanille", "IMP Glace Chocolat"],
-  "Filet de poulet": ["Poulet Hallal", "Filet de Poulet Halal", "Filet de Poulet Français"],
-  "Émincé de poulet": ["Poulet Hallal"],
-  "Poulet mariné": ["Poulet Hallal"],
-  "Tomates cerise confites": ["Tomates cerises cherry"],
-  "Tomates cerises confites": ["Tomates cerises cherry"],
-  Tomates: ["Tomates Samsmazano", "Tomates cerises cherry"],
-  Concombre: ["Concombres"],
-  "Sauce tomate au basilic": ["Sauce Tomate", "Pesto"],
-  "Fromage à raclette": ["Raclette le corboîer carré"],
-  "Tomme genevoise": ["Tomme GRTA 100gr"],
-  "Tomme vaudoise": ["Tomme Vaudoise", "Tomme GRTA 100gr"],
-  Saucisse: ["Saucisson de Jussy IGP kg", "Saucisse à rôtir fermier Vaudois"],
-  "Saucisson vaudois": ["Saucisson Vaudois IGP kg", "Saucisson de Jussy IGP kg"],
-  "Jambon de Parme": ["Jambon de Parme"],
-  "Jambon cru": ["Jambon Cru du Château", "Jambon de Parme"],
-  Bresaola: ["Bresaola"],
-  "Magret de canard": ["Magret de canard fumé"],
-  "Magret de canard fumé": ["Magret de canard fumé"],
-  "Bœuf haché": ["Viande Hachée", "Viande de bœuf haché (surgelé)"],
-  Salade: ["Salade feuilles de chènes", "Roquette"],
-  Roquette: ["Roquette"],
-  Olives: ["Olives Noires dénoyautées"],
-  "Glace Chocolat": ["IMP Glace Chocolat"],
-  "Glace Vanille": ["IMP Glace Vanille"],
-  "Glace Mocca": ["IMP Glace Mocca"],
-  "Glace Stracciatella": ["IMP Glace Stacciatella"],
-  "Cidre Sorre Brut": ["Cidre Sorre Brut"],
-  "Cidre Sorre Doux": ["Cidre Sorre Doux"],
-  "Cidre Rhuys": ["Cidre Rhuys"],
-  "Vin blanc Chasselas": ["Vin blanc Chasselas", "Château du Crêt (Chasselas)"],
-  Café: ["Grain Napolitano", "Grain Top Arabica"],
-  "Double espresso": ["Grain Napolitano"],
-  Cappuccino: ["Grain Napolitano"],
-  "Café Viennois": ["Grain Napolitano"],
-  "Café viennois": ["Grain Napolitano"],
-  Renversé: ["Grain Napolitano", "Lait entier"],
-  "Lait chaud ou froid": ["Lait entier"],
-  "Petite salade verte": ["Salade feuilles de chènes"],
-  "Petite salade mixte": ["Salade feuilles de chènes"],
-  "Compote de pommes maison et amandes": ["Pommes gala cube", "Amandes effilées"],
-  "Coca-Cola": ["Coca-cola caisse"],
-  "Valser 5dl": ["Valser Still Naturelle 50", "Valser Gazeuse 50", "Valser plate"],
-  Valser: ["Valser Still Naturelle 50", "Valser plate"],
-  Prosecco: ["Proseco"],
-  "Prosecco flûte": ["Proseco"],
-  "Flûte de Prosecco": ["Proseco"],
-  "Aperol Spritz": ["Aperol", "Apérol apéritif 11 %"],
-  "Bière pression blonde 3dl": ["Bière blonde Feld"],
-  "Duchesse Anne": ["Duchesse Anne"],
-  "Jus de pommes artisanal médaillé": ["Jus de pomme"],
-  "Jus de pomme artisanal médaillé": ["Jus de pomme"],
-  "Jus d'oranges": ["Granini Orange", "Oranges a jus"],
-  "Jus d'oranges fraîchement pressées": ["Oranges a jus", "Granini Orange"],
-  "Pirulo tropical": ["Pirulo Tropical"],
-  "Sirop d'érable": ["Sirop d’Erable"],
-  "Crème de marrons": ["Crème de marron"],
-  "Kinder Surprise": ["Kinder surprise"],
-  "Thés Eilles": ["Earl grey", "Ceylan"],
-};
 
 interface MolardRow {
   supplier: string;
@@ -288,24 +186,6 @@ function packagesFromUnit(unit: string): { unitsPerPackage: number; packageConte
   const carton = unit.match(/carton de (\d+)/i);
   if (carton) return { unitsPerPackage: Number(carton[1]), packageContentLabel: unit };
   return { unitsPerPackage: 1, packageContentLabel: null };
-}
-
-function findInventoryMatch(target: string, candidates: { id: string; name: string }[]): string | null {
-  const wanted = target.toLowerCase().trim();
-  const exact = candidates.find((c) => c.name.toLowerCase().trim() === wanted);
-  if (exact) return exact.id;
-  for (const alias of ALIASES[target] ?? []) {
-    const hit = candidates.find((c) => c.name.toLowerCase().trim() === alias.toLowerCase());
-    if (hit) return hit.id;
-  }
-  const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const substring = candidates.find((c) => {
-    const name = c.name.toLowerCase().trim();
-    const [shorter, longer] = name.length <= wanted.length ? [name, wanted] : [wanted, name];
-    if (shorter.length < 5) return false;
-    return new RegExp(`\\b${escape(shorter)}\\b`, "i").test(longer);
-  });
-  return substring?.id ?? null;
 }
 
 function recipeQuantity(ingredientName: string, unit: string, kind: MenuItemKind): number {
@@ -437,21 +317,34 @@ async function main() {
     for (let i = 0; i < card.length; i++) {
       const source = card[i];
       const menuRow = insertedMenu[i];
-      const names = source.ingredients ?? (NO_AUTO_INGREDIENT.has(source.name) ? [] : [source.name]);
+      const hero = isMolard ? MOLARD_HERO_BY_NAME.get(source.name) : undefined;
+      // Molard: only the 15 tête-de-gondole dishes get a costed recipe. The rest stay « non chiffré ».
+      if (isMolard && !hero) continue;
+
+      const lines = hero
+        ? hero.lines.map((line) => ({ ingredientName: line.ingredient, portion: line.portion }))
+        : (source.ingredients ?? (NO_AUTO_INGREDIENT.has(source.name) ? [] : [source.name])).map((ingredientName) => ({
+            ingredientName,
+            portion: null,
+          }));
       const seen = new Set<string>();
 
-      for (const ingredientName of names) {
-        let inventoryItemId = findInventoryMatch(ingredientName, stockByName);
-        let unit = "unité";
-        if (!inventoryItemId) {
-          const category = guessCategory(ingredientName);
-          const zone = source.kind === "boisson" ? "salle" : zoneFor(category, ingredientName);
+      for (const line of lines) {
+        let inventoryItem = findInventoryMatch(line.ingredientName, stockByName);
+        if (!inventoryItem) {
+          if (hero) {
+            throw new Error(
+              `Molard: ingrédient « ${line.ingredientName} » introuvable dans l’inventaire pour ${source.name}`
+            );
+          }
+          const category = guessCategory(line.ingredientName);
+          const zone = source.kind === "boisson" ? "salle" : zoneFor(category, line.ingredientName);
           const [created] = await db
             .insert(inventoryItems)
             .values({
               tenantId: tenant.id,
               siteId: site.id,
-              name: ingredientName,
+              name: line.ingredientName,
               unit: source.kind === "boisson" ? "unité" : "portion",
               unitsPerPackage: 1,
               quantity: "0",
@@ -464,20 +357,30 @@ async function main() {
               supplierId: null,
             })
             .returning({ id: inventoryItems.id, name: inventoryItems.name, unit: inventoryItems.unit });
-          inventoryItemId = created.id;
-          unit = created.unit;
+          inventoryItem = created;
           stockByName.push({ id: created.id, name: created.name, unit: created.unit });
           createdExtras++;
-        } else {
-          unit = stockByName.find((s) => s.id === inventoryItemId)?.unit ?? "unité";
         }
-        // Created above when missing; narrow for TypeScript.
-        if (!inventoryItemId || seen.has(inventoryItemId)) continue;
-        seen.add(inventoryItemId);
+        if (seen.has(inventoryItem.id)) continue;
+        seen.add(inventoryItem.id);
+
+        let quantity: number;
+        if (hero && line.portion) {
+          const spec = specForInventoryName(inventoryItem.name);
+          const qty = spec ? stockQtyFromPortion(line.portion, spec) : null;
+          if (qty === null) {
+            throw new Error(
+              `Molard: conversion impossible ${line.ingredientName} → ${inventoryItem.name} (${inventoryItem.unit})`
+            );
+          }
+          quantity = qty;
+        } else {
+          quantity = recipeQuantity(line.ingredientName, inventoryItem.unit, source.kind);
+        }
         recipeValues.push({
           menuItemId: menuRow.id,
-          inventoryItemId,
-          quantity: recipeQuantity(ingredientName, unit, source.kind).toString(),
+          inventoryItemId: inventoryItem.id,
+          quantity: quantity.toString(),
         });
       }
     }
@@ -559,6 +462,7 @@ async function main() {
   console.log(`Chaîne ${tenant.name} alignée sur les cartes imprimées + inventaire Molard janv. 2026.`);
   console.log(`  ${catalog.length} articles de stock (quantités réelles à Molard seulement)`);
   console.log(`  ${recipeLinks} liaisons recette · ${createdExtras} articles créés pour matcher la carte (qté 0)`);
+  console.log(`  Molard : ${MOLARD_HERO_RECIPES.length} plats tête de gondole chiffrés, le reste non chiffré`);
   console.log(`  Direction : ${DIRECTOR_EMAIL}  /  ${DIRECTOR_PASSWORD}`);
   console.log("  Tablettes :");
   for (const site of refreshedSites.sort((a, b) => a.name.localeCompare(b.name, "fr"))) {

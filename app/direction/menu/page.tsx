@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { addMenuItemAction, deleteMenuItemAction, propagateMenuAction, updateMenuItemAction } from "@/lib/direction-actions";
 import { canUse } from "@/lib/billing/plans";
+import { buildDishCostRow } from "@/lib/food-cost-math";
 import { getInventoryBySite } from "@/lib/inventory-store";
 import { getIngredientsForMenuItems, getMenuItems } from "@/lib/menu-store";
+import { formatMoney } from "@/lib/money";
 import { pageDirector } from "@/lib/page-guards";
 import { getSitesForTenant } from "@/lib/site-store";
 import { MENU_CATEGORY_LABELS, MENU_CATEGORY_ORDER } from "@/types";
@@ -81,7 +83,27 @@ export default async function MenuPage({ searchParams }: { searchParams: Promise
             <section key={category} className="mb-6">
               <h2 className="mb-2 text-base font-bold text-muted-foreground">{MENU_CATEGORY_LABELS[category]}</h2>
               <ul className="space-y-2">
-                {items.map((item) => (
+                {items.map((item) => {
+                  const lines = ingredients.filter((i) => i.menuItemId === item.id);
+                  const costRow =
+                    site.slug === "molard"
+                      ? buildDishCostRow({
+                          menuItemId: item.id,
+                          name: item.name,
+                          price: item.price,
+                          lines: lines.map((line) => {
+                            const inv = inventory.find((i) => i.id === line.inventoryItemId);
+                            return {
+                              inventoryItemId: line.inventoryItemId,
+                              inventoryName: inv?.name ?? "",
+                              quantity: line.quantity,
+                              unitPrice: inv?.unitPrice ?? 0,
+                            };
+                          }),
+                          soldQty: 0,
+                        })
+                      : null;
+                  return (
                   <li key={item.id} className="rounded-lg border border-border bg-card p-3 shadow-sm">
                     <div className="flex flex-wrap items-center gap-2">
                       <AutoSaveForm action={updateMenuItemAction} className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
@@ -118,14 +140,28 @@ export default async function MenuPage({ searchParams }: { searchParams: Promise
                         <Trash2 className="h-5 w-5 text-destructive" />
                       </DeleteButton>
                     </div>
+                    {costRow && (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {costRow.cost === null ? (
+                          "Non chiffré"
+                        ) : (
+                          <>
+                            Coût matière {formatMoney(costRow.cost, tenant.currency)} · marge{" "}
+                            {formatMoney(costRow.margin ?? 0, tenant.currency)} (
+                            {costRow.marginPct?.toLocaleString("fr-CH", { maximumFractionDigits: 0 })} %)
+                          </>
+                        )}
+                      </p>
+                    )}
                     <RecipeEditor
                       menuItem={item}
                       inventory={inventory}
-                      lines={ingredients.filter((i) => i.menuItemId === item.id)}
+                      lines={lines}
                       enabled={recipesEnabled}
                     />
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </section>
           );

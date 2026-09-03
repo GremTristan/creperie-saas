@@ -63,6 +63,12 @@ export default async function VentesPage({ searchParams }: { searchParams: Promi
             >
               Activité
             </Link>
+            <Link
+              href={`/direction/couts${query({})}`}
+              className="inline-flex min-h-11 items-center rounded-md px-4 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              Coûts
+            </Link>
             {exportsEnabled ? (
               <Link
                 href={`/api/export/ventes${query({})}`}

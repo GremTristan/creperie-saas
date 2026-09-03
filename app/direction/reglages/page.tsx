@@ -23,6 +23,7 @@ export default async function ReglagesPage() {
       <nav className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Raccourcis">
         {[
           { href: "/direction/menu", label: "Menu" },
+          { href: "/direction/couts", label: "Coûts" },
           { href: "/direction/etablissements", label: "Sites" },
           { href: "/direction/abonnement", label: "Billing" },
           { href: "/direction", label: "Accueil" },

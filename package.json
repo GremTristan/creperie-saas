@@ -14,6 +14,7 @@
     "superadmin": "tsx scripts/create-superadmin.ts",
     "seed:chain": "tsx scripts/seed-creperies-group.ts",
     "check:permissions": "tsx scripts/check-permissions.ts",
+    "check:food-cost": "tsx scripts/check-food-cost.ts",
     "check:ocr": "tsx scripts/check-ocr-match.ts"
   },
   "dependencies": {
