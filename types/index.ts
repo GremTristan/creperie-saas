@@ -259,6 +259,78 @@ export interface ReminderCompletion {
   completedByUserId: string;
 }
 
+export type ReceiptStatus = "pending" | "proposed" | "validated" | "rejected";
+export type ReceiptLineStatus = "proposed" | "accepted" | "ignored";
+export type ImageMediaType = "image/jpeg" | "image/png" | "image/webp";
+
+export const RECEIPT_STATUS_LABELS: Record<ReceiptStatus, string> = {
+  pending: "En lecture",
+  proposed: "À valider",
+  validated: "Validé",
+  rejected: "Ignoré",
+};
+
+export interface Receipt {
+  id: string;
+  tenantId: string;
+  siteId: SiteId;
+  supplierId: string | null;
+  submittedByUserId: string;
+  submittedAt: string;
+  imageMediaType: ImageMediaType | null;
+  hasImage: boolean;
+  status: ReceiptStatus;
+  supplierNameRaw: string | null;
+  invoiceDate: string | null;
+  invoiceRef: string | null;
+  currency: string;
+  ocrError: string | null;
+  validatedByUserId: string | null;
+  validatedAt: string | null;
+}
+
+export interface ReceiptLine {
+  id: string;
+  tenantId: string;
+  receiptId: string;
+  rawLabel: string;
+  quantity: number;
+  unit: string | null;
+  unitPrice: number | null;
+  lineTotal: number | null;
+  proposedInventoryItemId: string | null;
+  matchScore: number | null;
+  status: ReceiptLineStatus;
+  sortOrder: number;
+}
+
+export interface SupplierPrice {
+  id: string;
+  tenantId: string;
+  supplierId: string;
+  inventoryItemId: string;
+  unitPrice: number;
+  unit: string;
+  observedAt: string;
+  receiptId: string | null;
+}
+
+export interface OcrInvoiceLine {
+  label: string;
+  quantity: number;
+  unit: string | null;
+  unitPrice: number | null;
+  lineTotal: number | null;
+}
+
+export interface OcrInvoice {
+  supplierName: string | null;
+  invoiceDate: string | null;
+  invoiceRef: string | null;
+  currency: string;
+  lines: OcrInvoiceLine[];
+}
+
 export interface AuditLogEntry {
   id: string;
   tenantId: string | null;

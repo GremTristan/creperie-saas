@@ -48,6 +48,9 @@ export const captureEventTypeEnum = pgEnum("capture_event_type", [
   "stock.waste",
   "stock.adjust",
 ]);
+export const imageMediaTypeEnum = pgEnum("image_media_type", ["image/jpeg", "image/png", "image/webp"]);
+export const receiptStatusEnum = pgEnum("receipt_status", ["pending", "proposed", "validated", "rejected"]);
+export const receiptLineStatusEnum = pgEnum("receipt_line_status", ["proposed", "accepted", "ignored"]);
 
 // One row per customer chain (the SaaS "tenant"). Every business row below
 // carries tenant_id so isolation is enforced by query, never by convention.
@@ -338,6 +341,93 @@ export const captureEvents = pgTable(
     unique("capture_events_idempotency_key_unique").on(table.idempotencyKey),
     index("capture_events_tenant_occurred_idx").on(table.tenantId, table.occurredAt),
     index("capture_events_site_occurred_idx").on(table.siteId, table.occurredAt),
+  ]
+);
+
+// Supplier delivery notes (photos or structured JSON). OCR proposes lines;
+// a director must validate before supplier_prices / stock move.
+export const receipts = pgTable(
+  "receipts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    siteId: uuid("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    supplierId: uuid("supplier_id").references(() => suppliers.id, { onDelete: "set null" }),
+    submittedByUserId: uuid("submitted_by_user_id").notNull(),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
+    imageMediaType: imageMediaTypeEnum("image_media_type"),
+    imageData: text("image_data"),
+    status: receiptStatusEnum("status").notNull().default("pending"),
+    supplierNameRaw: text("supplier_name_raw"),
+    invoiceDate: text("invoice_date"),
+    invoiceRef: text("invoice_ref"),
+    currency: text("currency").notNull().default("CHF"),
+    ocrRaw: jsonb("ocr_raw").$type<Record<string, unknown>>().notNull().default({}),
+    ocrError: text("ocr_error"),
+    validatedByUserId: uuid("validated_by_user_id"),
+    validatedAt: timestamp("validated_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("receipts_tenant_submitted_idx").on(table.tenantId, table.submittedAt),
+    index("receipts_site_status_idx").on(table.siteId, table.status),
+  ]
+);
+
+export const receiptLines = pgTable(
+  "receipt_lines",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    receiptId: uuid("receipt_id")
+      .notNull()
+      .references(() => receipts.id, { onDelete: "cascade" }),
+    rawLabel: text("raw_label").notNull(),
+    quantity: numeric("quantity", { precision: 12, scale: 4 }).notNull(),
+    unit: text("unit"),
+    unitPrice: numeric("unit_price", { precision: 12, scale: 2 }),
+    lineTotal: numeric("line_total", { precision: 12, scale: 2 }),
+    proposedInventoryItemId: uuid("proposed_inventory_item_id").references(() => inventoryItems.id, {
+      onDelete: "set null",
+    }),
+    matchScore: numeric("match_score", { precision: 4, scale: 3 }),
+    status: receiptLineStatusEnum("status").notNull().default("proposed"),
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (table) => [
+    index("receipt_lines_receipt_idx").on(table.receiptId),
+    index("receipt_lines_tenant_idx").on(table.tenantId),
+  ]
+);
+
+// Observed purchase prices from validated delivery notes. Append-only history.
+export const supplierPrices = pgTable(
+  "supplier_prices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    supplierId: uuid("supplier_id")
+      .notNull()
+      .references(() => suppliers.id, { onDelete: "cascade" }),
+    inventoryItemId: uuid("inventory_item_id")
+      .notNull()
+      .references(() => inventoryItems.id, { onDelete: "cascade" }),
+    unitPrice: numeric("unit_price", { precision: 12, scale: 2 }).notNull(),
+    unit: text("unit").notNull(),
+    observedAt: timestamp("observed_at", { withTimezone: true }).notNull().defaultNow(),
+    receiptId: uuid("receipt_id").references(() => receipts.id, { onDelete: "set null" }),
+    receiptLineId: uuid("receipt_line_id").references(() => receiptLines.id, { onDelete: "set null" }),
+  },
+  (table) => [
+    index("supplier_prices_item_observed_idx").on(table.inventoryItemId, table.observedAt),
+    index("supplier_prices_tenant_idx").on(table.tenantId),
   ]
 );
 
