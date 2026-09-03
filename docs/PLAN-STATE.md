@@ -4,7 +4,7 @@
 - base: `main`
 - current: `S2`
 - auto_merge: false
-- last_pr: (cette PR S4)
+- last_pr: https://github.com/GremTristan/creperie-saas/pull/5
 - blocker: none
 - pos_adapter: zelty
 
