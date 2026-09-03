@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { AutoSaveForm, CreateForm, DeleteButton } from "@/components/direction/forms";
 import { EmptyState, PageHeader, SiteTabs, Stat } from "@/components/direction/ui";
@@ -44,6 +45,14 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
           focusLow
             ? "Exceptions uniquement — quantités sous le seuil d’alerte."
             : "Seuils, commandes à passer, fournisseurs. Les prix restent cachés aux tablettes cuisine/salle."
+        }
+        action={
+          <Link
+            href={site ? `/direction/livraisons?site=${site.id}` : "/direction/livraisons"}
+            className="inline-flex min-h-11 items-center gap-2 rounded-md bg-muted px-4 text-sm font-semibold text-foreground hover:bg-border/60"
+          >
+            {site ? "Photographier un bon" : "Livraisons"}
+          </Link>
         }
       />
       <SiteTabs sites={sites} current={site?.id ?? null} basePath="/direction/stock" allLabel="Vue consolidée" query={focusLow ? { focus: "low" } : {}} />

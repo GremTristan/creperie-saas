@@ -5,7 +5,7 @@ import { capture } from "@/lib/capture";
 import { captureKey } from "@/lib/capture-keys";
 import { db } from "@/lib/db/client";
 import { inventoryItems, stockMovements, suppliers } from "@/lib/db/schema";
-import type { CaptureEventType, Category, InventoryItem, Role, SiteId, StaffInventoryItem, Supplier, Zone } from "@/types";
+import type { CaptureEventType, CaptureSource, Category, InventoryItem, Role, SiteId, StaffInventoryItem, Supplier, Zone } from "@/types";
 
 type InventoryItemRow = typeof inventoryItems.$inferSelect;
 
@@ -188,6 +188,50 @@ export async function setItemQuantity(input: {
       idempotencyKey: captureKey(input.tenantId, type, input.itemId, movement.createdAt.toISOString()),
     });
   }
+}
+
+// Adds (or subtracts) quantity without replacing the counted stock. Used when
+// a validated delivery note lands — capture source can be `ocr`.
+export async function applyStockDelta(input: {
+  tenantId: string;
+  siteId: string;
+  itemId: string;
+  delta: number;
+  userId: string;
+  reason: "adjust" | "waste";
+  source?: CaptureSource;
+  idempotencyKey?: string;
+}): Promise<void> {
+  if (input.delta === 0) return;
+  const current = await getInventoryItem(input.tenantId, input.itemId);
+  if (!current || current.siteId !== input.siteId) throw new Error("Article introuvable");
+  const next = Math.max(0, current.quantity + input.delta);
+  await db
+    .update(inventoryItems)
+    .set({ quantity: next.toString() })
+    .where(eq(inventoryItems.id, input.itemId));
+  const [movement] = await db
+    .insert(stockMovements)
+    .values({
+      tenantId: input.tenantId,
+      siteId: input.siteId,
+      inventoryItemId: input.itemId,
+      delta: input.delta.toString(),
+      reason: input.reason,
+      userId: input.userId,
+    })
+    .returning();
+  const type = `stock.${input.reason}` as CaptureEventType;
+  await capture({
+    tenantId: input.tenantId,
+    siteId: input.siteId,
+    occurredAt: movement.createdAt,
+    type,
+    source: input.source ?? "native",
+    inventoryItemId: input.itemId,
+    payload: { delta: input.delta, quantity: next },
+    idempotencyKey: input.idempotencyKey ?? captureKey(input.tenantId, type, input.itemId, movement.createdAt.toISOString()),
+  });
 }
 
 // Atomic decrement used by the order flow (never below zero).
