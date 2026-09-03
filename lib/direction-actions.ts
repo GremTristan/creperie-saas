@@ -35,6 +35,7 @@ import {
   rotateDeviceCode,
   setSiteActive,
 } from "@/lib/site-store";
+import { deletePosBinding, upsertPosBinding } from "@/lib/pos/bindings";
 import { updateTenant } from "@/lib/tenant-store";
 import {
   createDirectorUser,
@@ -347,6 +348,32 @@ export async function updateSiteAction(formData: FormData): Promise<void> {
   if (formData.get("rotateCode") === "1") {
     await rotateDeviceCode(tenant.id, id);
     await audit({ tenantId: tenant.id, siteId: id, userId: user.id, action: "site.rotate_code", targetType: "site", targetId: id });
+  }
+  if (formData.has("zeltyRestaurantId")) {
+    const externalId = text(formData.get("zeltyRestaurantId"), 64);
+    if (externalId) {
+      await upsertPosBinding({ tenantId: tenant.id, siteId: id, source: "zelty", externalId });
+      await audit({
+        tenantId: tenant.id,
+        siteId: id,
+        userId: user.id,
+        action: "site.pos_bind",
+        targetType: "site",
+        targetId: id,
+        details: { source: "zelty", externalId },
+      });
+    } else {
+      await deletePosBinding(tenant.id, id, "zelty");
+      await audit({
+        tenantId: tenant.id,
+        siteId: id,
+        userId: user.id,
+        action: "site.pos_unbind",
+        targetType: "site",
+        targetId: id,
+        details: { source: "zelty" },
+      });
+    }
   }
   revalidatePath("/direction", "layout");
 }

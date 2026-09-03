@@ -2,9 +2,9 @@
 
 - repo: `GremTristan/creperie-saas`
 - base: `main`
-- current: `S4`
+- current: `S2`
 - auto_merge: false
-- last_pr: https://github.com/GremTristan/creperie-saas/pull/4
+- last_pr: (cette PR S4)
 - blocker: none
 - pos_adapter: zelty
 
@@ -15,12 +15,13 @@
 - Taxonomie friction (canvas local, pas dans ce repo)
 - S0 `capture_events` + hooks stores + backfill (PR #1)
 - S1 direction L0 : activité (délais cuisine, temps à table, CA par personne, annulés/pertes, CSV tickets)
-- S3 OCR livraisons : `receipts` / `receipt_lines` / `supplier_prices`, matching stock, validation directeur
+- S3 OCR livraisons : `receipts` / `receipt_lines` / `supplier_prices`, matching stock, validation directeur (PR #4)
+- S4 adaptateur Zelty → TicketNormalized → `capture_events` (idempotent), bindings restaurant → site
 
-## En cours — S4 uniquement
+## En cours — S2 uniquement
 
-Adaptateur POS externe **Zelty** → TicketNormalized → `capture_events` (idempotent). Pas de caisse concurrente.
+15 plats tête de gondole Molard : quantités recette réelles, coût/marge direction, écart théorique vs count. Le reste « non chiffré ».
 
 ## Ensuite
 
-S2 (15 plats tête de gondole Molard) reste à faire.
+(fin des sprints capture S0–S4 hors S2)

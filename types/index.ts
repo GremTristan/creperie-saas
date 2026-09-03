@@ -183,6 +183,37 @@ export type CaptureEventType =
   | "stock.waste"
   | "stock.adjust";
 
+export interface TicketNormalizedItem {
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  externalId?: string;
+}
+
+// External POS ticket → capture_events. Never creates a native till order.
+export interface TicketNormalized {
+  source: CaptureSource;
+  externalId: string;
+  externalRestaurantId: string;
+  occurredAt: Date;
+  type: CaptureEventType;
+  tableLabel: string | null;
+  kind: OrderKind | null;
+  items: TicketNormalizedItem[];
+  total: number;
+  paymentMethod: PaymentMethod | null;
+  currency: string;
+  payload: Record<string, unknown>;
+}
+
+export interface PosBinding {
+  id: string;
+  tenantId: string;
+  siteId: SiteId;
+  source: CaptureSource;
+  externalId: string;
+}
+
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   cash: "Espèces",
   card: "Carte",

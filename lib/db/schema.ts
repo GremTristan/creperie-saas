@@ -431,6 +431,28 @@ export const supplierPrices = pgTable(
   ]
 );
 
+// Maps an external POS restaurant id to a site. One binding per (source, external_id).
+export const posBindings = pgTable(
+  "pos_bindings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    siteId: uuid("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    source: captureSourceEnum("source").notNull(),
+    externalId: text("external_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("pos_bindings_source_external_unique").on(table.source, table.externalId),
+    unique("pos_bindings_tenant_site_source_unique").on(table.tenantId, table.siteId, table.source),
+    index("pos_bindings_tenant_idx").on(table.tenantId),
+  ]
+);
+
 // Append-only trail of security-relevant actions (account changes, price
 // changes, deletions, subscription events).
 export const auditLogs = pgTable(

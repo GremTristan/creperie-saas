@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/direction/ui";
 import { Input } from "@/components/ui/input";
 import { addSiteAction, deleteSiteAction, updateSiteAction } from "@/lib/direction-actions";
 import { pageDirector } from "@/lib/page-guards";
+import { listPosBindings } from "@/lib/pos/bindings";
 import { getSitesForTenant } from "@/lib/site-store";
 import { getUsersForTenant } from "@/lib/user-store";
 import { cn } from "@/lib/utils";
@@ -14,7 +15,13 @@ export const metadata: Metadata = { title: "Établissements" };
 
 export default async function EtablissementsPage() {
   const { tenant } = await pageDirector({ allowInactiveTenant: true });
-  const [sites, users] = await Promise.all([getSitesForTenant(tenant.id), getUsersForTenant(tenant.id)]);
+  const [sites, users, bindings] = await Promise.all([
+    getSitesForTenant(tenant.id),
+    getUsersForTenant(tenant.id),
+    listPosBindings(tenant.id, "zelty"),
+  ]);
+  const zeltyBySite = new Map(bindings.map((b) => [b.siteId, b.externalId]));
+  const webhookReady = Boolean(process.env.ZELTY_WEBHOOK_SECRET);
 
   return (
     <>
@@ -57,6 +64,23 @@ export default async function EtablissementsPage() {
                   <RefreshCw className="h-5 w-5" />
                 </ActionButton>
               </div>
+
+              <AutoSaveForm action={updateSiteAction} className="mt-4" message="Lien Zelty enregistré">
+                <input type="hidden" name="id" value={site.id} />
+                <label className="block text-sm font-medium">
+                  ID restaurant Zelty
+                  <Input
+                    name="zeltyRestaurantId"
+                    defaultValue={zeltyBySite.get(site.id) ?? ""}
+                    placeholder="ex. 12345"
+                    className="mt-1 min-h-11 font-mono"
+                  />
+                </label>
+                <p className="mt-1 text-[12px] text-muted-foreground">
+                  Les tickets Zelty alimentent l’activité sans ouvrir une deuxième caisse.
+                  {!webhookReady && " Secret webhook non configuré côté serveur."}
+                </p>
+              </AutoSaveForm>
 
               <div className="mt-4 flex flex-wrap gap-2">
                 <Link href={`/direction/equipe?site=${site.id}`} className="min-h-11 inline-flex items-center rounded-md bg-muted px-4 text-sm font-medium hover:bg-border/60">

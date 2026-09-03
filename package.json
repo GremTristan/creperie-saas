@@ -14,7 +14,8 @@
     "superadmin": "tsx scripts/create-superadmin.ts",
     "seed:chain": "tsx scripts/seed-creperies-group.ts",
     "check:permissions": "tsx scripts/check-permissions.ts",
-    "check:ocr": "tsx scripts/check-ocr-match.ts"
+    "check:ocr": "tsx scripts/check-ocr-match.ts",
+    "check:zelty": "tsx scripts/check-zelty.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
