@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
+    "db:backfill-capture": "tsx scripts/backfill-capture.ts",
     "superadmin": "tsx scripts/create-superadmin.ts",
     "seed:chain": "tsx scripts/seed-creperies-group.ts",
     "check:permissions": "tsx scripts/check-permissions.ts"

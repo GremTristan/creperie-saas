@@ -2,6 +2,8 @@ import "server-only";
 
 import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { canUse } from "@/lib/billing/plans";
+import { capture } from "@/lib/capture";
+import { captureKey } from "@/lib/capture-keys";
 import { db } from "@/lib/db/client";
 import { orderItems, orders } from "@/lib/db/schema";
 import { todayPeriod } from "@/lib/dates";
@@ -204,6 +206,27 @@ export async function createOrder(input: {
 
   await consumeForLines(input, row.id, lines.map((l) => ({ menuItemId: l.menu.id, quantity: l.quantity })));
 
+  await capture({
+    tenantId: input.tenantId,
+    siteId: input.siteId,
+    occurredAt: now,
+    type: "order.created",
+    source: "native",
+    orderId: row.id,
+    payload: { number: row.number, kind: row.kind, total },
+    idempotencyKey: captureKey(input.tenantId, "order.created", row.id, now.toISOString()),
+  });
+  await capture({
+    tenantId: input.tenantId,
+    siteId: input.siteId,
+    occurredAt: now,
+    type: "order.sent",
+    source: "native",
+    orderId: row.id,
+    payload: { number: row.number },
+    idempotencyKey: captureKey(input.tenantId, "order.sent", row.id, now.toISOString()),
+  });
+
   const [order] = await attachItems([row]);
   return order;
 }
@@ -266,6 +289,19 @@ export async function appendOrderLines(input: {
     .where(eq(orders.id, order.id));
 
   await consumeForLines(input, order.id, lines.map((l) => ({ menuItemId: l.menu.id, quantity: l.quantity })));
+
+  const occurredAt = new Date();
+  await capture({
+    tenantId: input.tenantId,
+    siteId: input.siteId,
+    occurredAt,
+    type: "order.appended",
+    source: "native",
+    orderId: order.id,
+    payload: { added, lineCount: lines.length },
+    idempotencyKey: captureKey(input.tenantId, "order.appended", order.id, occurredAt.toISOString()),
+  });
+
   return (await getOrder(input.tenantId, order.id))!;
 }
 
@@ -274,25 +310,65 @@ export async function markOrderReady(tenantId: string, siteId: SiteId, orderId: 
     .update(orderItems)
     .set({ status: "ready" })
     .where(eq(orderItems.orderId, orderId));
-  await db
+  const [updated] = await db
     .update(orders)
     .set({ status: "ready", readyAt: new Date() })
-    .where(and(eq(orders.id, orderId), eq(orders.tenantId, tenantId), eq(orders.siteId, siteId), eq(orders.status, "sent")));
+    .where(and(eq(orders.id, orderId), eq(orders.tenantId, tenantId), eq(orders.siteId, siteId), eq(orders.status, "sent")))
+    .returning();
+  if (updated?.readyAt) {
+    await capture({
+      tenantId,
+      siteId,
+      occurredAt: updated.readyAt,
+      type: "order.ready",
+      source: "native",
+      orderId,
+      payload: {},
+      idempotencyKey: captureKey(tenantId, "order.ready", orderId, updated.readyAt.toISOString()),
+    });
+  }
 }
 
 // Kitchen "un-ready" (tapped by mistake) — back to the queue.
 export async function markOrderPreparing(tenantId: string, siteId: SiteId, orderId: string): Promise<void> {
-  await db
+  const [updated] = await db
     .update(orders)
     .set({ status: "sent", readyAt: null })
-    .where(and(eq(orders.id, orderId), eq(orders.tenantId, tenantId), eq(orders.siteId, siteId), eq(orders.status, "ready")));
+    .where(and(eq(orders.id, orderId), eq(orders.tenantId, tenantId), eq(orders.siteId, siteId), eq(orders.status, "ready")))
+    .returning();
+  if (updated) {
+    const occurredAt = new Date();
+    await capture({
+      tenantId,
+      siteId,
+      occurredAt,
+      type: "order.sent",
+      source: "native",
+      orderId,
+      payload: { unready: true },
+      idempotencyKey: captureKey(tenantId, "order.sent", orderId, occurredAt.toISOString()),
+    });
+  }
 }
 
 export async function markOrderServed(tenantId: string, siteId: SiteId, orderId: string): Promise<void> {
-  await db
+  const [updated] = await db
     .update(orders)
     .set({ status: "served", servedAt: new Date() })
-    .where(and(eq(orders.id, orderId), eq(orders.tenantId, tenantId), eq(orders.siteId, siteId), inArray(orders.status, ["sent", "ready"])));
+    .where(and(eq(orders.id, orderId), eq(orders.tenantId, tenantId), eq(orders.siteId, siteId), inArray(orders.status, ["sent", "ready"])))
+    .returning();
+  if (updated?.servedAt) {
+    await capture({
+      tenantId,
+      siteId,
+      occurredAt: updated.servedAt,
+      type: "order.served",
+      source: "native",
+      orderId,
+      payload: {},
+      idempotencyKey: captureKey(tenantId, "order.served", orderId, updated.servedAt.toISOString()),
+    });
+  }
 }
 
 export async function payOrder(input: {
@@ -302,7 +378,7 @@ export async function payOrder(input: {
   method: PaymentMethod;
   userId: string;
 }): Promise<Order | undefined> {
-  await db
+  const [updated] = await db
     .update(orders)
     .set({ status: "paid", paidAt: new Date(), paymentMethod: input.method, paidByUserId: input.userId })
     .where(
@@ -312,15 +388,42 @@ export async function payOrder(input: {
         eq(orders.siteId, input.siteId),
         inArray(orders.status, ACTIVE_STATUSES)
       )
-    );
+    )
+    .returning();
+  if (updated?.paidAt) {
+    await capture({
+      tenantId: input.tenantId,
+      siteId: input.siteId,
+      occurredAt: updated.paidAt,
+      type: "order.paid",
+      source: "native",
+      orderId: input.orderId,
+      payload: { paymentMethod: input.method },
+      idempotencyKey: captureKey(input.tenantId, "order.paid", input.orderId, updated.paidAt.toISOString()),
+    });
+  }
   return getOrder(input.tenantId, input.orderId);
 }
 
 export async function cancelOrder(tenantId: string, siteId: SiteId, orderId: string): Promise<void> {
-  await db
+  const [updated] = await db
     .update(orders)
     .set({ status: "cancelled" })
-    .where(and(eq(orders.id, orderId), eq(orders.tenantId, tenantId), eq(orders.siteId, siteId), inArray(orders.status, ACTIVE_STATUSES)));
+    .where(and(eq(orders.id, orderId), eq(orders.tenantId, tenantId), eq(orders.siteId, siteId), inArray(orders.status, ACTIVE_STATUSES)))
+    .returning();
+  if (updated) {
+    const occurredAt = new Date();
+    await capture({
+      tenantId,
+      siteId,
+      occurredAt,
+      type: "order.cancelled",
+      source: "native",
+      orderId,
+      payload: {},
+      idempotencyKey: captureKey(tenantId, "order.cancelled", orderId, "cancelled"),
+    });
+  }
 }
 
 export { summarizePaid, type DayTotals } from "@/lib/order-store-shared";

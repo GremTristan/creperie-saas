@@ -26,6 +26,28 @@ export const orderItemStatusEnum = pgEnum("order_item_status", ["pending", "read
 export const paymentMethodEnum = pgEnum("payment_method", ["cash", "card", "twint", "other"]);
 export const menuCategoryEnum = pgEnum("menu_category", ["salee", "sucree", "boisson", "autre"]);
 export const stockMovementReasonEnum = pgEnum("stock_movement_reason", ["sale", "count", "adjust", "waste", "import"]);
+export const captureSourceEnum = pgEnum("capture_source", [
+  "native",
+  "zelty",
+  "addition",
+  "lightspeed",
+  "square",
+  "ocr",
+  "backfill",
+]);
+export const captureEventTypeEnum = pgEnum("capture_event_type", [
+  "order.created",
+  "order.sent",
+  "order.ready",
+  "order.served",
+  "order.paid",
+  "order.cancelled",
+  "order.appended",
+  "stock.sale",
+  "stock.count",
+  "stock.waste",
+  "stock.adjust",
+]);
 
 // One row per customer chain (the SaaS "tenant"). Every business row below
 // carries tenant_id so isolation is enforced by query, never by convention.
@@ -290,6 +312,33 @@ export const users = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("users_site_id_idx").on(table.siteId), index("users_tenant_id_idx").on(table.tenantId)]
+);
+
+// Append-only native/POS events. Writes go through lib/capture.ts and must
+// never fail a till action (unique idempotency_key).
+export const captureEvents = pgTable(
+  "capture_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    siteId: uuid("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+    type: captureEventTypeEnum("type").notNull(),
+    source: captureSourceEnum("source").notNull(),
+    orderId: uuid("order_id").references(() => orders.id, { onDelete: "set null" }),
+    inventoryItemId: uuid("inventory_item_id").references(() => inventoryItems.id, { onDelete: "set null" }),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+    idempotencyKey: text("idempotency_key").notNull(),
+  },
+  (table) => [
+    unique("capture_events_idempotency_key_unique").on(table.idempotencyKey),
+    index("capture_events_tenant_occurred_idx").on(table.tenantId, table.occurredAt),
+    index("capture_events_site_occurred_idx").on(table.siteId, table.occurredAt),
+  ]
 );
 
 // Append-only trail of security-relevant actions (account changes, price

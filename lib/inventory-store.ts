@@ -1,9 +1,11 @@
 import "server-only";
 
 import { and, eq, inArray, sql } from "drizzle-orm";
+import { capture } from "@/lib/capture";
+import { captureKey } from "@/lib/capture-keys";
 import { db } from "@/lib/db/client";
 import { inventoryItems, stockMovements, suppliers } from "@/lib/db/schema";
-import type { Category, InventoryItem, Role, SiteId, StaffInventoryItem, Supplier, Zone } from "@/types";
+import type { CaptureEventType, Category, InventoryItem, Role, SiteId, StaffInventoryItem, Supplier, Zone } from "@/types";
 
 type InventoryItemRow = typeof inventoryItems.$inferSelect;
 
@@ -163,13 +165,27 @@ export async function setItemQuantity(input: {
     .set({ quantity: input.quantity.toString() })
     .where(eq(inventoryItems.id, input.itemId));
   if (delta !== 0) {
-    await db.insert(stockMovements).values({
+    const [movement] = await db
+      .insert(stockMovements)
+      .values({
+        tenantId: input.tenantId,
+        siteId: input.siteId,
+        inventoryItemId: input.itemId,
+        delta: delta.toString(),
+        reason: input.reason,
+        userId: input.userId,
+      })
+      .returning();
+    const type = `stock.${input.reason}` as CaptureEventType;
+    await capture({
       tenantId: input.tenantId,
       siteId: input.siteId,
+      occurredAt: movement.createdAt,
+      type,
+      source: "native",
       inventoryItemId: input.itemId,
-      delta: delta.toString(),
-      reason: input.reason,
-      userId: input.userId,
+      payload: { delta, quantity: input.quantity },
+      idempotencyKey: captureKey(input.tenantId, type, input.itemId, movement.createdAt.toISOString()),
     });
   }
 }
@@ -193,14 +209,28 @@ export async function consumeStock(
       .update(inventoryItems)
       .set({ quantity: sql`GREATEST(0, ${inventoryItems.quantity} - ${line.quantity.toString()}::numeric)` })
       .where(eq(inventoryItems.id, line.inventoryItemId));
-    await db.insert(stockMovements).values({
+    const [movement] = await db
+      .insert(stockMovements)
+      .values({
+        tenantId: input.tenantId,
+        siteId: input.siteId,
+        inventoryItemId: line.inventoryItemId,
+        delta: (-line.quantity).toString(),
+        reason: "sale",
+        orderId: input.orderId,
+        userId: input.userId,
+      })
+      .returning();
+    await capture({
       tenantId: input.tenantId,
       siteId: input.siteId,
-      inventoryItemId: line.inventoryItemId,
-      delta: (-line.quantity).toString(),
-      reason: "sale",
+      occurredAt: movement.createdAt,
+      type: "stock.sale",
+      source: "native",
       orderId: input.orderId,
-      userId: input.userId,
+      inventoryItemId: line.inventoryItemId,
+      payload: { delta: -line.quantity, quantity: line.quantity },
+      idempotencyKey: captureKey(input.tenantId, "stock.sale", line.inventoryItemId, movement.createdAt.toISOString()),
     });
   }
 }

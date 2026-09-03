@@ -169,6 +169,20 @@ export type OrderStatus = "open" | "sent" | "ready" | "served" | "paid" | "cance
 export type OrderItemStatus = "pending" | "ready";
 export type PaymentMethod = "cash" | "card" | "twint" | "other";
 
+export type CaptureSource = "native" | "zelty" | "addition" | "lightspeed" | "square" | "ocr" | "backfill";
+export type CaptureEventType =
+  | "order.created"
+  | "order.sent"
+  | "order.ready"
+  | "order.served"
+  | "order.paid"
+  | "order.cancelled"
+  | "order.appended"
+  | "stock.sale"
+  | "stock.count"
+  | "stock.waste"
+  | "stock.adjust";
+
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   cash: "Espèces",
   card: "Carte",
