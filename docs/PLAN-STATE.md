@@ -4,7 +4,7 @@
 - base: `main`
 - current: `S3`
 - auto_merge: false
-- last_pr: none
+- last_pr: https://github.com/GremTristan/creperie-saas/pull/6
 - blocker: none
 
 ## Fait
